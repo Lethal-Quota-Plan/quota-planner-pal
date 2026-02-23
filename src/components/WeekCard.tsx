@@ -58,7 +58,7 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
         </div>
         <div className="flex items-center gap-4 text-sm">
           <span className="text-muted-foreground font-mono">
-            Quota: <span className={result.quotaMet ? "text-success" : "text-foreground"}>{result.sellAmount}</span>/{result.quota}
+            Fulfilled/Expected Average Quota: <span className={result.quotaMet ? "text-success" : "text-foreground"}>▮{result.sellAmount}</span>/▮{result.quota}
           </span>
           {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
         </div>
@@ -87,7 +87,7 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
                       {PLANETS.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}
-                          {p.entranceCost > 0 && ` (₵${p.entranceCost})`}
+                          {p.entranceCost > 0 && ` (▮${p.entranceCost})`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -106,7 +106,7 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
           {result.entranceCosts > 0 && (
             <div className="flex items-center gap-2 text-xs text-warning bg-warning/10 px-3 py-2 rounded">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              <span className="font-mono">Entrance costs: ₵{result.entranceCosts}</span>
+              <span className="font-mono">Entrance costs: ▮{result.entranceCosts}</span>
             </div>
           )}
 
@@ -118,27 +118,36 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm font-mono">
               <div>
                 <span className="text-xs text-muted-foreground block">Week Scrap</span>
-                <span className="text-foreground">{result.weekScrap}</span>
+                <span className="text-foreground">▮{result.weekScrap}</span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Carried Over</span>
-                <span className="text-foreground">{carryOverScrap}</span>
+                <span className="text-foreground">▮{carryOverScrap}</span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Total Available</span>
-                <span className="text-primary font-bold">{result.totalAvailableScrap}</span>
+                <span className="text-primary font-bold">▮{result.totalAvailableScrap}</span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Sell Amount</span>
-                <Input
-                  type="number"
-                  min={0}
-                  max={result.totalAvailableScrap}
-                  value={week.sellAmount || ""}
-                  onChange={(e) => setSellAmount(e.target.value)}
-                  className="h-8 font-mono bg-background border-border text-sm mt-0.5"
-                  placeholder="0"
-                />
+                <div style={{ opacity: "0.6" }}>▮
+                  <input
+                      type="number"
+                      min={0}
+                      max={result.totalAvailableScrap}
+                      value={week.sellAmount || ""}
+                      onChange={(e) => setSellAmount(e.target.value)}
+                      className="h-4 font-mono border-border text-sm mt-0.5"
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        outline: "none",
+                        padding: "5px",
+                        width: "100px",
+                      }}
+                      placeholder="0"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -148,24 +157,24 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
             <div className="border-t border-border pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm font-mono">
               <div>
                 <span className="text-xs text-muted-foreground block">Income</span>
-                <span className="text-success">+{result.sellAmount}</span>
+                <span className="text-success">+▮{result.sellAmount}</span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Overtime</span>
                 <span className={result.overtimeBonus > 0 ? "text-success" : "text-muted-foreground"}>
-                  +{result.overtimeBonus}
+                  +▮{result.overtimeBonus}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Costs</span>
                 <span className={result.entranceCosts > 0 ? "text-danger" : "text-muted-foreground"}>
-                  -{result.entranceCosts}
+                  -▮{result.entranceCosts}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Net Change</span>
                 <span className={result.creditChange >= 0 ? "text-success font-bold" : "text-danger font-bold"}>
-                  {result.creditChange >= 0 ? "+" : ""}{result.creditChange}
+                  ▮{result.creditChange >= 0 ? "+" : ""}{result.creditChange}
                 </span>
               </div>
             </div>
@@ -174,7 +183,7 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
           {/* Unsold scrap info */}
           {result.unsoldScrap > 0 && (
             <p className="text-xs text-muted-foreground font-mono">
-              Unsold scrap carried to next week: <span className="text-foreground">{result.unsoldScrap}</span>
+              Unsold scrap carried to next week: <span className="text-foreground">▮{result.unsoldScrap}</span>
             </p>
           )}
         </div>

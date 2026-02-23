@@ -70,7 +70,7 @@ export default function Index() {
               <p className={`font-mono text-2xl font-bold ${
                 finalCredits >= 0 ? "text-success" : "text-danger"
               }`}>
-                ₵{finalCredits}
+                ▮{finalCredits}
               </p>
             </div>
             <Button
@@ -103,7 +103,7 @@ export default function Index() {
         {/* Starting credits info */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono px-1">
           <TrendingUp className="w-3.5 h-3.5" />
-          Starting credits: ₵{game.startingCredits}
+          Starting credits: ▮{game.startingCredits}
         </div>
 
         {/* Week Cards */}
