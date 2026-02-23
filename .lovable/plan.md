@@ -1,46 +1,89 @@
 
 
-# Lethal Company Weekly Planner & Quota Calculator
+# Horizontal Timeline with Pop-out Week Cards
 
-## Overview
-A dark, thematic single-page app where players plan their weekly routes, track scrap collection, decide how much to sell, and monitor their credit balance against rising quotas — all with local storage persistence.
+## What Changes
 
-## Visual Design
-- **Dark & industrial theme** inspired by Lethal Company's aesthetic — dark grays, muted oranges/yellows for warnings, green for profit, red for quota danger
-- Monospace/industrial fonts for a space-industrial feel
-- Week-by-week vertical timeline layout
+Replace the vertically stacked week cards with a **horizontal timeline** running across the center of the screen. Each week is a clickable node on the timeline. Clicking a node expands the corresponding week card with an animation; clicking again (or clicking a different node) retracts it. Only one card is visible at a time.
 
-## Core Features
+## Layout Structure
 
-### 1. Weekly Route Planner
-- Each game week shows 3 day slots (Day 1, 2, 3) + a "Sell Day" (Day 4)
-- For each day, the player selects a planet from a dropdown (with all 11 planets listed by index-name)
-- Entrance costs are deducted from the credit balance once per unique planet visited that week
-- Expected scrap collected per day is auto-calculated based on the planet's expected profit value
+```text
++----------------------------------------------------------+
+|  HEADER (sticky, unchanged)                               |
++----------------------------------------------------------+
+|                                                          |
+|  [Game Over Banner if applicable]                        |
+|                                                          |
+|  ----[W0]----[W1]----[W2]----[W3]----[+]---->           |
+|              (horizontal scrollable timeline)            |
+|                                                          |
+|  +----------------------------------------------------+  |
+|  |  WEEK CARD (animated pop-out below timeline)       |  |
+|  |  (only shown when a node is selected)              |  |
+|  +----------------------------------------------------+  |
+|                                                          |
++----------------------------------------------------------+
+```
 
-### 2. Sell Day & Scrap Management
-- At the end of each week, the app shows total scrap collected (3 days of planet visits + any unsold scrap carried from prior weeks)
-- Player inputs how much scrap value they want to sell
-- Unsold scrap carries forward to the next week's pool
-- The app validates you can't sell more than you have
+## Interaction Flow
 
-### 3. Quota & Overtime Calculator
-- Profit quota starts at a constant 500 (placeholder — with a clearly marked spot for the user to later plug in a custom formula per week)
-- Overtime bonus calculated as: `(amountSold - profitQuota) / 5` (only when sold exceeds quota)
-- Credit balance updated each week: `+amountSold + overtimeBonus - entranceCosts`
-- Clear pass/fail indicator per week (did income meet quota?)
+1. **Default state**: Timeline visible, no card shown (or Week 0 auto-selected)
+2. **Click a node**: The selected node highlights (glow + scale), the week card slides/fades in below the timeline
+3. **Click the same node again**: Card retracts (fade out), no card shown
+4. **Click a different node**: Current card fades out, new card fades in (with a brief transition)
+5. **Add Week button**: A "+" node at the end of the timeline creates a new week and selects it
 
-### 4. Credit Balance Tracker
-- Running credit balance displayed prominently at the top
-- Week-by-week breakdown showing: income, overtime bonus, entrance costs, net change
-- Game Over detection — if quota is not met, the app flags the failure
+## Visual Design for Timeline
 
-### 5. Week Management
-- "Add Next Week" button to keep extending the game
-- Each week is collapsible/expandable so the timeline stays manageable
-- Ability to edit previous weeks and have all downstream calculations recalculate
+- A horizontal line (border-border color) with circular nodes positioned on it
+- Each node shows the week number and a small status indicator (green check / red X / neutral dot)
+- The selected node gets an orange glow ring and slight scale-up
+- Nodes with game-over state get a red tint
+- The timeline scrolls horizontally when there are many weeks (using overflow-x-auto)
+- A "+" button at the tail end of the timeline to add weeks
 
-### 6. Data Persistence
-- All entered data (planet selections, sell amounts, week history) saved to browser local storage
-- "New Game" button to reset everything
+## Animation Details
+
+- Card entrance: fade-in + slide-up from below the timeline (~300ms ease-out)
+- Card exit: fade-out + slide-down (~200ms ease-out)
+- Node selection: scale transition + glow ring (~200ms)
+- CSS transitions and keyframes only (no animation library needed)
+
+## Technical Plan
+
+### 1. Add keyframes to `tailwind.config.ts`
+
+Add `slide-up`, `slide-down` keyframes and corresponding animation utilities for the card pop-out/retract effect.
+
+### 2. Create `src/components/WeekTimeline.tsx` (new file)
+
+A horizontal scrollable timeline component:
+- Receives `weeks[]`, `results[]`, `selectedIndex`, `onSelect(index)`, `onAddWeek()`
+- Renders a horizontal flex container with a connecting line and circular node buttons
+- Each node displays week number + status icon
+- Selected node gets `ring-2 ring-primary scale-110 glow-orange`
+- "+" node at the end calls `onAddWeek`
+- Auto-scrolls to keep selected node visible using `scrollIntoView`
+
+### 3. Update `src/components/WeekCard.tsx`
+
+- Remove the collapsed/expand toggle header (the timeline handles selection now)
+- The card is always shown fully when rendered (no internal collapse state)
+- Keep all the existing content: day selectors, sell day, results, unsold scrap info
+- Add a week title bar at the top (non-clickable, just informational)
+
+### 4. Update `src/pages/Index.tsx`
+
+- Add `selectedWeek` state (`number | null`, default `0`)
+- Replace the week cards map with:
+  1. The `WeekTimeline` component
+  2. A single conditionally-rendered `WeekCard` wrapped in an animated container
+- When `selectedWeek` changes, animate the transition using a CSS class toggle
+- The "Add Week" logic moves into the timeline's "+" button handler (add week + auto-select it)
+- Remove the standalone "Add Week" button at the bottom
+
+### 5. Add CSS for card animation in `src/index.css`
+
+Add utility classes for the pop-out card container animation (slide-up-fade-in / slide-down-fade-out) using `@layer utilities` to keep everything consistent with the existing style system.
 
