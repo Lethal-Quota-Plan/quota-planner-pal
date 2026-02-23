@@ -109,7 +109,7 @@ export default function Index() {
           <TrendingUp className="w-3.5 h-3.5" />
           Starting credits: ▮{game.startingCredits}
         </div>
-
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono px-1">Weeks</div>
         {/* Timeline */}
         <WeekTimeline
           weeks={game.weeks}

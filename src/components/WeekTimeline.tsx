@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { CheckCircle2, XCircle, Plus, Circle } from "lucide-react";
+import {Plus} from "lucide-react";
 import type { WeekData } from "@/lib/gameData";
 
 interface WeekResult {
@@ -27,6 +27,7 @@ export default function WeekTimeline({
 }: WeekTimelineProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const weekNodeSeparation = 1.2;
 
   useEffect(() => {
     if (selectedIndex !== null) {
@@ -40,14 +41,22 @@ export default function WeekTimeline({
   };
 
   return (
-    <div className="relative py-6">
+    <div className="relative py-6 overflow-hidden h-6">
       <div
         ref={scrollRef}
-        className="flex items-center gap-0 overflow-x-auto px-4 pb-2 scrollbar-hide"
+        className="flex items-center gap-0 px-4 pb-2"
       >
         {/* Connecting line background */}
-        <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-px bg-border pointer-events-none" />
-
+        {
+          weeks.length > 0 &&
+            <div>
+              <div className="absolute left-6 right-9 h-px bg-border pointer-events-none" style={{ top: "120%", width: (weeks.length*(weekNodeSeparation+2.5)-1)+"rem" }} />
+              <div className="absolute" style={{ top: "calc(120% - 0.18rem)", left: (weeks.length*(weekNodeSeparation+2.5)+.1)+"rem" }}>
+                <div style={{ height: "0.33rem" }}><div className="relative h-px bg-border pointer-events-none rotate-45 w-2"></div></div>
+                <div style={{ height: "0.33rem" }}><div className="relative h-px bg-border pointer-events-none -rotate-45 w-2"></div></div>
+              </div>
+            </div>
+        }
         {weeks.map((week, i) => {
           const result = results[i];
           const isSelected = selectedIndex === i;
@@ -55,8 +64,8 @@ export default function WeekTimeline({
           const isGameOver = gameOverWeek !== null && i >= gameOverWeek;
 
           return (
-            <div key={week.id} className="flex items-center shrink-0">
-              {i > 0 && <div className="w-10 sm:w-16 h-px bg-border" />}
+            <div key={week.id} className="flex items-center shrink-0 h-12">
+              {i > 0 && <div className="h-px bg-border" style={{ width: weekNodeSeparation+"rem" }}/>}
               <button
                 ref={(el) => {
                   if (el) nodeRefs.current.set(i, el);
@@ -73,29 +82,17 @@ export default function WeekTimeline({
                     w-10 h-10 rounded-full flex items-center justify-center font-mono text-sm
                     border-2 transition-all duration-200
                     ${isSelected
-                      ? "border-primary bg-primary/20 glow-orange"
-                      : isGameOver
-                        ? "border-danger/50 bg-danger/10"
-                        : "border-border bg-secondary hover:border-muted-foreground"
+                      ? "border-primary bg-primary/20"
+                      : hasSold ? 
+                        isGameOver ? "border-danger/50 bg-danger/10" : "border-success/50 bg-success/10" 
+                        : "border-border/50 bg-secondary/10"
+                        
                     }
                   `}
                 >
                   <span className={isSelected ? "text-primary font-bold" : "text-foreground"}>
                     {week.weekNumber}
                   </span>
-                </div>
-
-                {/* Status indicator */}
-                <div className="h-4 flex items-center">
-                  {hasSold ? (
-                    result.quotaMet ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                    ) : (
-                      <XCircle className="w-3.5 h-3.5 text-danger" />
-                    )
-                  ) : (
-                    <Circle className="w-2.5 h-2.5 text-muted-foreground/40" />
-                  )}
                 </div>
               </button>
             </div>
@@ -104,7 +101,7 @@ export default function WeekTimeline({
 
         {/* Add week node */}
         <div className="flex items-center shrink-0">
-          {weeks.length > 0 && <div className="w-10 sm:w-16 h-px bg-border" />}
+          {weeks.length > 0 && <div className="h-px bg-border" style={{ width: weekNodeSeparation+"rem" }}/>}
           <button
             onClick={onAddWeek}
             className="relative z-[1] w-10 h-10 rounded-full border-2 border-dashed border-border
