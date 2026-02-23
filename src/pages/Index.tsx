@@ -46,7 +46,7 @@ export default function Index() {
   );
 
   // Build carry-over chain
-  let carryChain: number[] = [0];
+  const carryChain: number[] = [0];
   for (let i = 0; i < results.length - 1; i++) {
     carryChain.push(results[i].carryOverScrap);
   }

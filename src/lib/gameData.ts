@@ -1,3 +1,5 @@
+import {quotaStat} from "@/lib/quotaStat.ts";
+
 export interface Planet {
   id: string;
   name: string;
@@ -49,7 +51,7 @@ export function getPlanetById(id: string): Planet | undefined {
  * TODO: Replace with the actual formula later.
  */
 export function getQuotaForWeek(_weekNumber: number): number {
-  return 500;
+  return quotaStat.stepToAndReturn(_weekNumber);
 }
 
 export function calculateWeekResults(week: WeekData, carryOverScrap: number) {
@@ -69,7 +71,7 @@ export function calculateWeekResults(week: WeekData, carryOverScrap: number) {
 
   const quota = getQuotaForWeek(week.weekNumber);
   const quotaMet = sellAmount >= quota;
-  const overtimeBonus = sellAmount > quota ? Math.floor((sellAmount - quota) / 5) : 0;
+  const overtimeBonus = sellAmount > quota ? Math.max(Math.floor((sellAmount - quota) / 5)-15,0) : 0;
 
   const creditChange = sellAmount + overtimeBonus - entranceCosts;
   const unsoldScrap = totalAvailableScrap - sellAmount;
@@ -116,7 +118,7 @@ export function loadGame(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch { /* empty */ }
   return { weeks: [createWeek(0)], startingCredits: 60 };
 }
 
