@@ -8,12 +8,14 @@ import {
   saveGame,
   resetGame,
 } from "@/lib/gameData";
+import WeekTimeline from "@/components/WeekTimeline";
 import WeekCard from "@/components/WeekCard";
 import { Button } from "@/components/ui/button";
-import { Plus, RotateCcw, Skull, TrendingUp } from "lucide-react";
+import { RotateCcw, Skull, TrendingUp } from "lucide-react";
 
 export default function Index() {
   const [game, setGame] = useState<GameState>(loadGame);
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(0);
 
   useEffect(() => {
     saveGame(game);
@@ -28,15 +30,17 @@ export default function Index() {
   }, []);
 
   const addWeek = () => {
-    setGame((prev) => ({
-      ...prev,
-      weeks: [...prev.weeks, createWeek(prev.weeks.length)],
-    }));
+    setGame((prev) => {
+      const newWeeks = [...prev.weeks, createWeek(prev.weeks.length)];
+      return { ...prev, weeks: newWeeks };
+    });
+    setSelectedWeek(game.weeks.length);
   };
 
   const handleReset = () => {
     if (confirm("Start a new game? All data will be lost.")) {
       setGame(resetGame());
+      setSelectedWeek(0);
     }
   };
 
@@ -106,26 +110,27 @@ export default function Index() {
           Starting credits: ▮{game.startingCredits}
         </div>
 
-        {/* Week Cards */}
-        {game.weeks.map((week, i) => (
-          <WeekCard
-            key={week.id}
-            week={week}
-            carryOverScrap={carryChain[i]}
-            creditsAfter={results[i]?.creditsAfter ?? game.startingCredits}
-            onUpdate={(w) => updateWeek(i, w)}
-          />
-        ))}
+        {/* Timeline */}
+        <WeekTimeline
+          weeks={game.weeks}
+          results={results}
+          selectedIndex={selectedWeek}
+          gameOverWeek={gameOverWeek}
+          onSelect={setSelectedWeek}
+          onAddWeek={addWeek}
+        />
 
-        {/* Add Week */}
-        <Button
-          onClick={addWeek}
-          variant="outline"
-          className="w-full border-dashed border-border text-muted-foreground hover:text-primary hover:border-primary/50 font-mono"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          ADD WEEK {game.weeks.length}
-        </Button>
+        {/* Selected Week Card */}
+        {selectedWeek !== null && game.weeks[selectedWeek] && (
+          <div key={selectedWeek} className="animate-card-pop-in">
+            <WeekCard
+              week={game.weeks[selectedWeek]}
+              carryOverScrap={carryChain[selectedWeek]}
+              creditsAfter={results[selectedWeek]?.creditsAfter ?? game.startingCredits}
+              onUpdate={(w) => updateWeek(selectedWeek, w)}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
