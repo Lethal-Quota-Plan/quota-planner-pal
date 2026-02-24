@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   type GameState,
   type WeekData,
+  type LuckConfig,
   createWeek,
   calculateAllWeeks,
   loadGame,
@@ -11,17 +12,21 @@ import {
 import WeekTimeline from "@/components/WeekTimeline";
 import WeekCard from "@/components/WeekCard";
 import WeekChart from "@/components/WeekChart";
+import LuckSettings from "@/components/LuckSettings";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import {
   ArrowBigRight,
   ArrowBigRightDashIcon,
   RotateCcw,
+  Settings,
   Skull,
   TrendingUp
 } from "lucide-react";
 
 export default function Index() {
   const [game, setGame] = useState<GameState>(loadGame);
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(0);
 
   useEffect(() => {
@@ -51,9 +56,14 @@ export default function Index() {
     }
   };
 
+  const updateLuckConfig = useCallback((luckConfig: LuckConfig) => {
+    setGame((prev) => ({ ...prev, luckConfig }));
+  }, []);
+
   const { results, finalCredits, gameOver, gameOverWeek } = calculateAllWeeks(
     game.weeks,
-    game.startingCredits
+    game.startingCredits,
+    game.luckConfig
   );
 
   // Build carry-over chain
@@ -95,6 +105,15 @@ export default function Index() {
             <Button
               variant="outline"
               size="icon"
+              onClick={() => setShowSettings((s) => !s)}
+              title="Luck Settings"
+              className="border-border text-muted-foreground hover:text-primary hover:border-primary/50"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               onClick={handleReset}
               title="New Game"
               className="border-border text-muted-foreground hover:text-danger hover:border-danger/50"
@@ -106,6 +125,12 @@ export default function Index() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+        {/* Luck Settings */}
+        <Collapsible open={showSettings} onOpenChange={setShowSettings}>
+          <CollapsibleContent>
+            <LuckSettings config={game.luckConfig} onChange={updateLuckConfig} />
+          </CollapsibleContent>
+        </Collapsible>
         {/* Game Over Banner */}
         {(gameOver && results && results[gameOverWeek].sellAmount > 0) && (
           <div className="flex items-center gap-3 bg-danger/10 border border-danger/30 rounded-lg px-4 py-3 glow-red">

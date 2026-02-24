@@ -11,11 +11,11 @@ export class quotaStat {
         quotaStat.next_iteration ++;
     }
 
-    static stepToAndReturn(iteration_index: number) {
+    static stepToAndReturn(iteration_index: number, luck_val: number = 0.1545) {
         quotaStat.quotaList = [130]
         quotaStat.next_iteration = 1;
         while (quotaStat.next_iteration <= iteration_index) {
-            quotaStat.next();
+            quotaStat.next(luck_val);
         }
         return quotaStat.quotaList[iteration_index];
     }
