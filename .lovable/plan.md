@@ -1,67 +1,117 @@
 
 
-# Graph Visualization + Per-Week Balance Display
+# Luck Configuration System
 
 ## Overview
 
-Add a multi-line chart below the timeline that plots key metrics across all weeks, and replace the final credit balance in the header with the selected week's end-of-week balance.
+Add a settings panel where players can configure two simulation parameters -- **scrap value bias** and **quota luck** -- either manually via sliders or by selecting one of four named presets. These settings are persisted in the game state and feed into the existing calculation pipeline.
 
-## Data Series (6 lines)
+## The Two Settings
 
-All plotted against the X-axis (Week number):
+### 1. Scrap Value Bias (affects daily scrap collected per moon)
 
-1. **Credit Balance** -- `creditsAfter` per week (line, green)
-2. **Quota** -- the required quota value per week (line, orange/dashed)
-3. **Quota Fulfilled** -- the actual `sellAmount` per week (line, yellow)
-4. **Overtime Bonus** -- `overtimeBonus` per week (bar or line, cyan)
-5. **Credit Change** -- `creditChange` per week, i.e. the net credit gained that week (bar or line, purple)
-6. **Unsold Scrap** -- `carryOverScrap` accumulation per week (line, muted gray)
+A slider from **-200% to +200%** that shifts the expected scrap value for each moon:
 
-All this data is already computed by `calculateAllWeeks` -- no new calculations needed.
+- **0%** = the moon's statistical average (`expectedProfit` in PLANETS, unchanged from current behavior)
+- **-100%** = the moon's 12.5th percentile value (`P125_scrap_val` from `EnumMetainf`)
+- **+100%** = the moon's 87.5th percentile value (`P875_scrap_val` from `EnumMetainf`)
+- Values beyond +/-100% extrapolate linearly beyond P12.5/P87.5
 
-## Header Change
+The formula per moon at bias `b` (where b is the slider value as a fraction, e.g. 1.0 = 100%):
 
-Replace the static `finalCredits` display in the header with the **selected week's** `creditsAfter` value. When no week is selected, show the latest week's balance. Label it "CREDITS (WEEK N)".
+```text
+if b >= 0:
+  scrap = average + b * (P875 - average)
+if b < 0:
+  scrap = average + b * (average - P125)
+```
 
-## Technical Plan
+This replaces the static `expectedProfit` lookup in `calculateWeekResults`.
 
-### 1. Create `src/components/WeekChart.tsx`
+### 2. Quota Luck (affects quota escalation curve)
 
-A new component using `recharts` (already installed) with `ChartContainer` from the existing chart UI primitives:
+A slider from **0 to 1** that is passed directly as `luck_val` into `quotaStat.next()`. Higher values = luckier = slower quota growth. Currently hardcoded at 0.1545.
 
-- **Props**: `results[]`, `weeks[]`, `startingCredits`, `selectedIndex`, `onSelectWeek(index)`
-- Transform `results` into chart data: `[{ week: 0, credits: 60, quota: 500, sold: 0, overtime: 0, creditChange: 0, unsoldScrap: 0 }, ...]`
-- Use `ComposedChart` with:
-  - `Line` for Credit Balance (green, stroke-width 2)
-  - `Line` for Quota (orange, dashed)
-  - `Line` for Quota Fulfilled / Sold (yellow)
-  - `Line` for Overtime Bonus (cyan)
-  - `Line` for Credit Change (purple)
-  - `Line` for Unsold Scrap (gray, dashed)
-- Custom tooltip showing all values for the hovered week
-- Clickable data points -- clicking a point on the chart selects that week (calls `onSelectWeek`)
-- Dark-themed axes and grid matching the app's industrial style
-- A `ReferenceLine` at y=0 for the credit balance axis
-- Responsive container that fits the `max-w-3xl` content area
-- Legend at the bottom with color-coded labels
+This replaces the hardcoded default in `quotaStat.stepToAndReturn`.
 
-### 2. Update `src/pages/Index.tsx`
+## Four Presets
 
-- Import and render `WeekChart` between the timeline and the week card
-- Pass `results`, `weeks`, `game.startingCredits`, `selectedWeek`, and `setSelectedWeek`
-- In the header, replace `finalCredits` with the selected week's `creditsAfter` (or latest week if none selected)
-- Add a label showing which week's balance is displayed
+| Preset Name | Scrap Bias | Quota Luck |
+|---|---|---|
+| I'm always being unfortunate | -100% | 0.05 |
+| Just being probabilistically average | 0% | 0.1545 |
+| I trust in my luck | +80% | 0.6 |
+| Perfection shall eliminate any uncertainty | +200% | 0.99 |
 
-### 3. Styling
+Selecting a preset sets both sliders. Adjusting either slider manually clears the active preset indicator (switches to "Custom").
 
-- Use the existing theme colors via CSS variables:
-  - Green (`hsl(140 60% 40%)`) for credit balance
-  - Orange (`hsl(35 90% 55%)`) for quota
-  - Yellow (`hsl(50 90% 60%)`) for sold amount
-  - Cyan (`hsl(180 60% 50%)`) for overtime
-  - Purple (`hsl(270 60% 60%)`) for credit change
-  - Gray (`hsl(220 10% 50%)`) for unsold scrap
-- Chart background transparent (inherits card bg)
-- Grid lines use `border` color at low opacity
-- Wrap chart in a card container with a "WEEKLY METRICS" title bar in monospace font
+## UI Design
+
+A collapsible settings bar placed between the header and the banners in the main layout:
+
+- A gear icon button in the header toggles it open/closed
+- When open, it shows:
+  - A row of 4 preset buttons (pill-shaped, monospace, the active one highlighted in primary color)
+  - Two labeled sliders below:
+    - "SCRAP BIAS" with value label showing the percentage
+    - "QUOTA LUCK" with value label showing the decimal
+- Styled consistently with the dark industrial theme (border-border, bg-card, font-mono)
+
+## Technical Changes
+
+### 1. Extend `GameState` in `src/lib/gameData.ts`
+
+Add a `luckConfig` field to `GameState`:
+
+```typescript
+interface LuckConfig {
+  scrapBias: number;   // -2.0 to 2.0 (fraction, not percentage)
+  quotaLuck: number;   // 0.0 to 1.0
+}
+
+interface GameState {
+  weeks: WeekData[];
+  startingCredits: number;
+  luckConfig: LuckConfig;  // new field
+}
+```
+
+Default value: `{ scrapBias: 0, quotaLuck: 0.1545 }`.
+
+Update `loadGame`, `resetGame` to include the default. Existing saves without this field get the default via a fallback.
+
+### 2. Create scrap bias calculator in `src/lib/gameData.ts`
+
+Add a function `getAdjustedProfit(planetId: string, scrapBias: number): number` that:
+
+- Looks up the moon's `P125_scrap_val`, `P875_scrap_val`, and `expectedProfit` from `EnumMetainf.metamap`
+- Applies the linear interpolation formula described above
+- Falls back to `expectedProfit` if the moon isn't in `EnumMetainf`
+
+### 3. Thread `luckConfig` through calculations
+
+- `calculateWeekResults` receives `luckConfig` as a parameter
+- Daily scrap uses `getAdjustedProfit(pid, luckConfig.scrapBias)` instead of `planet.expectedProfit`
+- `getQuotaForWeek` receives `quotaLuck` and passes it to `quotaStat.stepToAndReturn`
+- `quotaStat.stepToAndReturn` accepts an optional `luck_val` parameter instead of using the hardcoded default
+- `calculateAllWeeks` passes `luckConfig` through
+
+### 4. Create `src/components/LuckSettings.tsx`
+
+A new component with:
+
+- Props: `config: LuckConfig`, `onChange: (config: LuckConfig) => void`
+- 4 preset buttons in a horizontal row
+- Two `Slider` components (from the existing radix slider in `src/components/ui/slider.tsx`)
+- Scrap bias slider: min -200, max 200, step 5, displayed as percentage
+- Quota luck slider: min 0, max 100, step 1, internally mapped to 0-1
+- Active preset detection: compare current values against preset values to highlight the matching one
+
+### 5. Update `src/pages/Index.tsx`
+
+- Add a `showSettings` toggle state
+- Render a gear icon button in the header (next to the reset button)
+- Render `LuckSettings` in a collapsible section when toggled
+- Pass `game.luckConfig` and an `onChangeLuckConfig` handler that updates the game state
+- Pass `game.luckConfig` to `calculateAllWeeks`
 
