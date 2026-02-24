@@ -13,6 +13,7 @@ export class quotaStat {
 
     static stepToAndReturn(iteration_index: number) {
         quotaStat.quotaList = [130]
+        quotaStat.next_iteration = 1;
         while (quotaStat.next_iteration <= iteration_index) {
             quotaStat.next();
         }
