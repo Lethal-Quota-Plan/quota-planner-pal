@@ -1,89 +1,67 @@
 
 
-# Horizontal Timeline with Pop-out Week Cards
+# Graph Visualization + Per-Week Balance Display
 
-## What Changes
+## Overview
 
-Replace the vertically stacked week cards with a **horizontal timeline** running across the center of the screen. Each week is a clickable node on the timeline. Clicking a node expands the corresponding week card with an animation; clicking again (or clicking a different node) retracts it. Only one card is visible at a time.
+Add a multi-line chart below the timeline that plots key metrics across all weeks, and replace the final credit balance in the header with the selected week's end-of-week balance.
 
-## Layout Structure
+## Data Series (6 lines)
 
-```text
-+----------------------------------------------------------+
-|  HEADER (sticky, unchanged)                               |
-+----------------------------------------------------------+
-|                                                          |
-|  [Game Over Banner if applicable]                        |
-|                                                          |
-|  ----[W0]----[W1]----[W2]----[W3]----[+]---->           |
-|              (horizontal scrollable timeline)            |
-|                                                          |
-|  +----------------------------------------------------+  |
-|  |  WEEK CARD (animated pop-out below timeline)       |  |
-|  |  (only shown when a node is selected)              |  |
-|  +----------------------------------------------------+  |
-|                                                          |
-+----------------------------------------------------------+
-```
+All plotted against the X-axis (Week number):
 
-## Interaction Flow
+1. **Credit Balance** -- `creditsAfter` per week (line, green)
+2. **Quota** -- the required quota value per week (line, orange/dashed)
+3. **Quota Fulfilled** -- the actual `sellAmount` per week (line, yellow)
+4. **Overtime Bonus** -- `overtimeBonus` per week (bar or line, cyan)
+5. **Credit Change** -- `creditChange` per week, i.e. the net credit gained that week (bar or line, purple)
+6. **Unsold Scrap** -- `carryOverScrap` accumulation per week (line, muted gray)
 
-1. **Default state**: Timeline visible, no card shown (or Week 0 auto-selected)
-2. **Click a node**: The selected node highlights (glow + scale), the week card slides/fades in below the timeline
-3. **Click the same node again**: Card retracts (fade out), no card shown
-4. **Click a different node**: Current card fades out, new card fades in (with a brief transition)
-5. **Add Week button**: A "+" node at the end of the timeline creates a new week and selects it
+All this data is already computed by `calculateAllWeeks` -- no new calculations needed.
 
-## Visual Design for Timeline
+## Header Change
 
-- A horizontal line (border-border color) with circular nodes positioned on it
-- Each node shows the week number and a small status indicator (green check / red X / neutral dot)
-- The selected node gets an orange glow ring and slight scale-up
-- Nodes with game-over state get a red tint
-- The timeline scrolls horizontally when there are many weeks (using overflow-x-auto)
-- A "+" button at the tail end of the timeline to add weeks
-
-## Animation Details
-
-- Card entrance: fade-in + slide-up from below the timeline (~300ms ease-out)
-- Card exit: fade-out + slide-down (~200ms ease-out)
-- Node selection: scale transition + glow ring (~200ms)
-- CSS transitions and keyframes only (no animation library needed)
+Replace the static `finalCredits` display in the header with the **selected week's** `creditsAfter` value. When no week is selected, show the latest week's balance. Label it "CREDITS (WEEK N)".
 
 ## Technical Plan
 
-### 1. Add keyframes to `tailwind.config.ts`
+### 1. Create `src/components/WeekChart.tsx`
 
-Add `slide-up`, `slide-down` keyframes and corresponding animation utilities for the card pop-out/retract effect.
+A new component using `recharts` (already installed) with `ChartContainer` from the existing chart UI primitives:
 
-### 2. Create `src/components/WeekTimeline.tsx` (new file)
+- **Props**: `results[]`, `weeks[]`, `startingCredits`, `selectedIndex`, `onSelectWeek(index)`
+- Transform `results` into chart data: `[{ week: 0, credits: 60, quota: 500, sold: 0, overtime: 0, creditChange: 0, unsoldScrap: 0 }, ...]`
+- Use `ComposedChart` with:
+  - `Line` for Credit Balance (green, stroke-width 2)
+  - `Line` for Quota (orange, dashed)
+  - `Line` for Quota Fulfilled / Sold (yellow)
+  - `Line` for Overtime Bonus (cyan)
+  - `Line` for Credit Change (purple)
+  - `Line` for Unsold Scrap (gray, dashed)
+- Custom tooltip showing all values for the hovered week
+- Clickable data points -- clicking a point on the chart selects that week (calls `onSelectWeek`)
+- Dark-themed axes and grid matching the app's industrial style
+- A `ReferenceLine` at y=0 for the credit balance axis
+- Responsive container that fits the `max-w-3xl` content area
+- Legend at the bottom with color-coded labels
 
-A horizontal scrollable timeline component:
-- Receives `weeks[]`, `results[]`, `selectedIndex`, `onSelect(index)`, `onAddWeek()`
-- Renders a horizontal flex container with a connecting line and circular node buttons
-- Each node displays week number + status icon
-- Selected node gets `ring-2 ring-primary scale-110 glow-orange`
-- "+" node at the end calls `onAddWeek`
-- Auto-scrolls to keep selected node visible using `scrollIntoView`
+### 2. Update `src/pages/Index.tsx`
 
-### 3. Update `src/components/WeekCard.tsx`
+- Import and render `WeekChart` between the timeline and the week card
+- Pass `results`, `weeks`, `game.startingCredits`, `selectedWeek`, and `setSelectedWeek`
+- In the header, replace `finalCredits` with the selected week's `creditsAfter` (or latest week if none selected)
+- Add a label showing which week's balance is displayed
 
-- Remove the collapsed/expand toggle header (the timeline handles selection now)
-- The card is always shown fully when rendered (no internal collapse state)
-- Keep all the existing content: day selectors, sell day, results, unsold scrap info
-- Add a week title bar at the top (non-clickable, just informational)
+### 3. Styling
 
-### 4. Update `src/pages/Index.tsx`
-
-- Add `selectedWeek` state (`number | null`, default `0`)
-- Replace the week cards map with:
-  1. The `WeekTimeline` component
-  2. A single conditionally-rendered `WeekCard` wrapped in an animated container
-- When `selectedWeek` changes, animate the transition using a CSS class toggle
-- The "Add Week" logic moves into the timeline's "+" button handler (add week + auto-select it)
-- Remove the standalone "Add Week" button at the bottom
-
-### 5. Add CSS for card animation in `src/index.css`
-
-Add utility classes for the pop-out card container animation (slide-up-fade-in / slide-down-fade-out) using `@layer utilities` to keep everything consistent with the existing style system.
+- Use the existing theme colors via CSS variables:
+  - Green (`hsl(140 60% 40%)`) for credit balance
+  - Orange (`hsl(35 90% 55%)`) for quota
+  - Yellow (`hsl(50 90% 60%)`) for sold amount
+  - Cyan (`hsl(180 60% 50%)`) for overtime
+  - Purple (`hsl(270 60% 60%)`) for credit change
+  - Gray (`hsl(220 10% 50%)`) for unsold scrap
+- Chart background transparent (inherits card bg)
+- Grid lines use `border` color at low opacity
+- Wrap chart in a card container with a "WEEKLY METRICS" title bar in monospace font
 
