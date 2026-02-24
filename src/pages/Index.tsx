@@ -10,6 +10,7 @@ import {
 } from "@/lib/gameData";
 import WeekTimeline from "@/components/WeekTimeline";
 import WeekCard from "@/components/WeekCard";
+import WeekChart from "@/components/WeekChart";
 import { Button } from "@/components/ui/button";
 import {
   ArrowBigRight,
@@ -76,11 +77,19 @@ export default function Index() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-xs text-muted-foreground font-mono">CREDITS</p>
+              <p className="text-xs text-muted-foreground font-mono">
+                CREDITS (WEEK {selectedWeek !== null ? selectedWeek : game.weeks.length - 1})
+              </p>
               <p className={`font-mono text-2xl font-bold ${
-                finalCredits >= 0 ? "text-success" : "text-danger"
+                (selectedWeek !== null
+                  ? results[selectedWeek]?.creditsAfter ?? finalCredits
+                  : finalCredits) >= 0
+                  ? "text-success"
+                  : "text-danger"
               }`}>
-                ▮{finalCredits}
+                ▮{selectedWeek !== null
+                  ? results[selectedWeek]?.creditsAfter ?? finalCredits
+                  : finalCredits}
               </p>
             </div>
             <Button
@@ -148,6 +157,15 @@ export default function Index() {
           gameOverWeek={gameOverWeek}
           onSelect={setSelectedWeek}
           onAddWeek={addWeek}
+        />
+
+        {/* Chart */}
+        <WeekChart
+          results={results}
+          weeks={game.weeks}
+          startingCredits={game.startingCredits}
+          selectedIndex={selectedWeek}
+          onSelectWeek={setSelectedWeek}
         />
 
         {/* Selected Week Card */}
