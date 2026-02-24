@@ -9,10 +9,16 @@ export class moonMetainf {
     size: number;
     min_scrap: number;
     max_scrap: number;
-    min_power: number;
-    max_power: number;
+    unit_min_scrap_avg: number;
+    unit_max_scrap_avg: number;
+    P125_scrap_val: number;
+    P875_scrap_val: number;
+    power_indoor: number;
+    power_outside: number;
     more_info: string;
-    constructor(name: string, description: string, difficulty: string, risk_level: string, cost: number, likely_layout: string, likely_layout_percentage: number, size: number, min_scrap: number, max_scrap: number, min_power: number, max_power: number, more_info: string) {
+    confidential_interval_border: number;
+
+    constructor(name: string, description: string, difficulty: string, risk_level: string, cost: number, likely_layout: string, likely_layout_percentage: number, size: number, min_scrap: number, max_scrap: number, power_indoor: number, power_outside: number, more_info: string, unit_min_scrap_avg: number, unit_max_scrap_avg: number, P125_scrap_val: number, P875_scrap_val: number) {
         this.name = name;
         this.description = description;
         this.difficulty = difficulty;
@@ -23,8 +29,12 @@ export class moonMetainf {
         this.size = size;
         this.min_scrap = min_scrap;
         this.max_scrap = max_scrap;
-        this.min_power = min_power;
-        this.max_power = max_power;
+        this.unit_min_scrap_avg = unit_min_scrap_avg;
+        this.unit_max_scrap_avg = unit_max_scrap_avg;
+        this.P125_scrap_val = P125_scrap_val;
+        this.P875_scrap_val = P875_scrap_val;
+        this.power_indoor = power_indoor;
+        this.power_outside = power_outside;
         this.more_info = more_info;
     }
 }
@@ -43,7 +53,11 @@ export class EnumMetainf {
         0,
         0,
         0,
-        "https://lethal-company.fandom.com/wiki/Gordion"
+        "https://lethal-company.fandom.com/wiki/Gordion",
+        0,
+        0,
+        0,
+        0
     );
 
     static EXPERIMENTATION = new moonMetainf(
@@ -59,7 +73,11 @@ export class EnumMetainf {
         11,
         4,
         8,
-        "https://lethal-company.fandom.com/wiki/Experimentation"
+        "https://lethal-company.fandom.com/wiki/Experimentation",
+        6,
+        155,
+        230,
+        333
     );
 
     static ASSURANCE = new moonMetainf(
@@ -75,7 +93,11 @@ export class EnumMetainf {
         15,
         6,
         8,
-        "https://lethal-company.fandom.com/wiki/Assurance"
+        "https://lethal-company.fandom.com/wiki/Assurance",
+        13,
+        120,
+        440,
+        581
     );
 
     static VOW = new moonMetainf(
@@ -91,7 +113,11 @@ export class EnumMetainf {
         14,
         7,
         6,
-        "https://lethal-company.fandom.com/wiki/Vow"
+        "https://lethal-company.fandom.com/wiki/Vow",
+        13,
+        120,
+        408,
+        563
     );
 
     static OFFENSE = new moonMetainf(
@@ -107,7 +133,11 @@ export class EnumMetainf {
         17,
         12,
         8,
-        "https://lethal-company.fandom.com/wiki/Offense"
+        "https://lethal-company.fandom.com/wiki/Offense",
+        16,
+        100,
+        506,
+        652
     );
 
     static MARCH = new moonMetainf(
@@ -123,7 +153,12 @@ export class EnumMetainf {
         16,
         14,
         12,
-        "https://lethal-company.fandom.com/wiki/March"
+        "https://lethal-company.fandom.com/wiki/March",
+        16,
+        156,
+        472.00,
+        633.00
+
     );
 
     static ADAMANCE = new moonMetainf(
@@ -139,7 +174,12 @@ export class EnumMetainf {
         18,
         13,
         13,
-        "https://lethal-company.fandom.com/wiki/Adamance"
+        "https://lethal-company.fandom.com/wiki/Adamance",
+        16,
+        120,
+        562,
+        738
+
     );
 
     static REND = new moonMetainf(
@@ -155,7 +195,11 @@ export class EnumMetainf {
         25,
         10,
         6,
-        "https://lethal-company.fandom.com/wiki/Rend"
+        "https://lethal-company.fandom.com/wiki/Rend",
+        21,
+        120,
+        1054,
+        1309
     );
 
     static DINE = new moonMetainf(
@@ -171,7 +215,10 @@ export class EnumMetainf {
         249,
         16,
         7,
-        "https://lethal-company.fandom.com/wiki/Dine"
+        "https://lethal-company.fandom.com/wiki/Dine",
+        8,
+        62,2639,
+        2725
     );
 
     static TITAN = new moonMetainf(
@@ -187,7 +234,12 @@ export class EnumMetainf {
         31,
         18,
         7,
-        "https://lethal-company.fandom.com/wiki/Titan"
+        "https://lethal-company.fandom.com/wiki/Titan",
+        13,
+        92,
+        1420,
+        1511
+
     );
 
     static ARTIFICE = new moonMetainf(
@@ -203,7 +255,11 @@ export class EnumMetainf {
         30,
         13,
         13,
-        "https://lethal-company.fandom.com/wiki/Artifice"
+        "https://lethal-company.fandom.com/wiki/Artifice",
+        19,
+        156,
+        1460,
+        1818
     );
 
     static EMBRION = new moonMetainf(
@@ -219,7 +275,11 @@ export class EnumMetainf {
         16,
         8,
         70,
-        "https://lethal-company.fandom.com/wiki/Embrion"
+        "https://lethal-company.fandom.com/wiki/Embrion",
+        15,
+        74,
+        479,
+        638
     );
 
     static LIQUIDATION = new moonMetainf(
@@ -235,7 +295,11 @@ export class EnumMetainf {
         44,
         13,
         13,
-        "https://lethal-company.fandom.com/wiki/Liquidation"
+        "https://lethal-company.fandom.com/wiki/Liquidation",
+        -1,
+        -1,
+        -1,
+        -1
     );
 
     static metamap: { [key: string]: moonMetainf } = {
