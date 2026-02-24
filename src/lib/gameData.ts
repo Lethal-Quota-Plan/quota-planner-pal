@@ -1,4 +1,5 @@
 import {quotaStat} from "@/lib/quotaStat.ts";
+import {EnumMetainf} from "@/lib/enumerateMetainf.ts";
 
 export interface Planet {
   id: string;
@@ -21,16 +22,24 @@ export const PLANETS: Planet[] = [
   { id: "5", name: "5-Embrion", entranceCost: 150, expectedProfit: 603 },
 ];
 
+export interface LuckConfig {
+  scrapBias: number;   // -2.0 to 2.0
+  quotaLuck: number;   // 0.0 to 1.0
+}
+
+export const DEFAULT_LUCK_CONFIG: LuckConfig = { scrapBias: 0, quotaLuck: 0.1545 };
+
 export interface WeekData {
   id: string;
   weekNumber: number;
-  days: [string | null, string | null, string | null]; // planet ids for 3 days
+  days: [string | null, string | null, string | null];
   sellAmount: number;
 }
 
 export interface GameState {
   weeks: WeekData[];
   startingCredits: number;
+  luckConfig: LuckConfig;
 }
 
 export function createWeek(weekNumber: number): WeekData {
@@ -46,17 +55,30 @@ export function getPlanetById(id: string): Planet | undefined {
   return PLANETS.find((p) => p.id === id);
 }
 
-/**
- * Calculate the profit quota for a given week.
- * TODO: Replace with the actual formula later.
- */
-export function getQuotaForWeek(_weekNumber: number): number {
-  return quotaStat.stepToAndReturn(_weekNumber);
+export function getAdjustedProfit(planetId: string, scrapBias: number): number {
+  const planet = getPlanetById(planetId);
+  if (!planet) return 0;
+  const meta = EnumMetainf.metamap[planetId];
+  if (!meta || meta.P125_scrap_val < 0) return planet.expectedProfit;
+
+  const avg = planet.expectedProfit;
+  if (scrapBias >= 0) {
+    return Math.round(avg + scrapBias * (meta.P875_scrap_val - avg));
+  } else {
+    return Math.round(avg + scrapBias * (avg - meta.P125_scrap_val));
+  }
 }
 
-export function calculateWeekResults(week: WeekData, carryOverScrap: number) {
-  // Scrap collected this week
-  const dailyScrap = week.days.map((pid) => (pid ? getPlanetById(pid)?.expectedProfit ?? 0 : 0));
+/**
+ * Calculate the profit quota for a given week.
+ */
+export function getQuotaForWeek(_weekNumber: number, quotaLuck: number = 0.1545): number {
+  return quotaStat.stepToAndReturn(_weekNumber, quotaLuck);
+}
+
+export function calculateWeekResults(week: WeekData, carryOverScrap: number, luckConfig: LuckConfig = DEFAULT_LUCK_CONFIG) {
+  // Scrap collected this week (adjusted by bias)
+  const dailyScrap = week.days.map((pid) => (pid ? getAdjustedProfit(pid, luckConfig.scrapBias) : 0));
   const weekScrap = dailyScrap.reduce((a, b) => a + b, 0);
   const totalAvailableScrap = weekScrap + carryOverScrap;
 
@@ -69,7 +91,7 @@ export function calculateWeekResults(week: WeekData, carryOverScrap: number) {
 
   const sellAmount = Math.min(week.sellAmount, totalAvailableScrap);
 
-  const quota = getQuotaForWeek(week.weekNumber);
+  const quota = getQuotaForWeek(week.weekNumber, luckConfig.quotaLuck);
   const quotaMet = sellAmount >= quota;
   const overtimeBonus = sellAmount > quota ? Math.max(Math.floor((sellAmount - quota) / 5)-15,0) : 0;
 
@@ -90,14 +112,14 @@ export function calculateWeekResults(week: WeekData, carryOverScrap: number) {
   };
 }
 
-export function calculateAllWeeks(weeks: WeekData[], startingCredits: number) {
+export function calculateAllWeeks(weeks: WeekData[], startingCredits: number, luckConfig: LuckConfig = DEFAULT_LUCK_CONFIG) {
   let credits = startingCredits;
   let carryOverScrap = 0;
   let gameOver = false;
   let gameOverWeek = -1;
 
   const results = weeks.map((week) => {
-    const r = calculateWeekResults(week, carryOverScrap);
+    const r = calculateWeekResults(week, carryOverScrap, luckConfig);
     credits += r.creditChange;
     carryOverScrap = r.unsoldScrap;
 
@@ -117,9 +139,12 @@ const STORAGE_KEY = "lethal-company-planner";
 export function loadGame(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...parsed, luckConfig: parsed.luckConfig ?? DEFAULT_LUCK_CONFIG };
+    }
   } catch { /* empty */ }
-  return { weeks: [createWeek(0)], startingCredits: 60 };
+  return { weeks: [createWeek(0)], startingCredits: 60, luckConfig: DEFAULT_LUCK_CONFIG };
 }
 
 export function saveGame(state: GameState) {
@@ -128,5 +153,5 @@ export function saveGame(state: GameState) {
 
 export function resetGame(): GameState {
   localStorage.removeItem(STORAGE_KEY);
-  return { weeks: [createWeek(0)], startingCredits: 60 };
+  return { weeks: [createWeek(0)], startingCredits: 60, luckConfig: DEFAULT_LUCK_CONFIG };
 }
