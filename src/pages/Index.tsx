@@ -11,7 +11,13 @@ import {
 import WeekTimeline from "@/components/WeekTimeline";
 import WeekCard from "@/components/WeekCard";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Skull, TrendingUp } from "lucide-react";
+import {
+  ArrowBigRight,
+  ArrowBigRightDashIcon,
+  RotateCcw,
+  Skull,
+  TrendingUp
+} from "lucide-react";
 
 export default function Index() {
   const [game, setGame] = useState<GameState>(loadGame);
@@ -92,16 +98,40 @@ export default function Index() {
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {/* Game Over Banner */}
-        {gameOver && (
+        {(gameOver && game.weeks[gameOverWeek].sellAmount > 0) && (
           <div className="flex items-center gap-3 bg-danger/10 border border-danger/30 rounded-lg px-4 py-3 glow-red">
             <Skull className="w-6 h-6 text-danger shrink-0" />
             <div>
               <p className="font-mono text-danger font-bold">GAME OVER</p>
               <p className="text-sm text-danger/80 font-mono">
-                Quota not met at Week {gameOverWeek}. The Company is not pleased.
+                Quota not met at Week {gameOverWeek}. The Company is not pleased!
               </p>
             </div>
           </div>
+        )}
+        {/* Game Duration Counter Banner */}
+        {!((gameOver && game.weeks[gameOverWeek].sellAmount > 0) || (gameOverWeek == -1)) && (
+            <div className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-lg px-4 py-3 glow-orange">
+              <ArrowBigRightDashIcon className="w-6 h-6 text-primary shrink-0" />
+              <div>
+                <p className="font-mono text-primary font-bold">THE GAME LASTS...</p>
+                <p className="text-sm text-primary/80 font-mono">
+                  the plan is only profitable until week {gameOverWeek}/{game.weeks.length}, the company covets more.
+                </p>
+              </div>
+            </div>
+        )}
+        {/* End-of-planning Indication Banner */}
+        {(gameOverWeek == -1) && (
+            <div className="flex items-center gap-3 bg-success/10 border border-success/30 rounded-lg px-4 py-3 glow-green">
+              <ArrowBigRight className="w-6 h-6 text-success shrink-0" />
+              <div>
+                <p className="font-mono text-success font-bold">THE GAME IS READY TO BEGIN WITH</p>
+                <p className="text-sm text-success/80 font-mono">
+                  the plan is profitable and game-ready for all {game.weeks.length} weeks, the company is satisfied for now.
+                </p>
+              </div>
+            </div>
         )}
 
         {/* Starting credits info */}

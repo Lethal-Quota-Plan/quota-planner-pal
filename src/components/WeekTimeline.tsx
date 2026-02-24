@@ -51,7 +51,7 @@ export default function WeekTimeline({
           weeks.length > 0 &&
             <div>
               <div className="absolute left-6 right-9 h-px bg-border pointer-events-none" style={{ top: "120%", width: (weeks.length*(weekNodeSeparation+2.5)-1)+"rem" }} />
-              <div className="absolute" style={{ top: "calc(120% - 0.18rem)", left: (weeks.length*(weekNodeSeparation+2.5)+.1)+"rem" }}>
+              <div className="absolute" style={{ top: "calc(120% - 0.162rem)", left: (weeks.length*(weekNodeSeparation+2.5)+.1)+"rem" }}>
                 <div style={{ height: "0.33rem" }}><div className="relative h-px bg-border pointer-events-none rotate-45 w-2"></div></div>
                 <div style={{ height: "0.33rem" }}><div className="relative h-px bg-border pointer-events-none -rotate-45 w-2"></div></div>
               </div>
@@ -61,7 +61,7 @@ export default function WeekTimeline({
           const result = results[i];
           const isSelected = selectedIndex === i;
           const hasSold = result && result.sellAmount > 0;
-          const isGameOver = gameOverWeek !== null && i >= gameOverWeek;
+          const isGameOver = gameOverWeek !== null && i >= gameOverWeek && gameOverWeek !== -1;
 
           return (
             <div key={week.id} className="flex items-center shrink-0 h-12">
