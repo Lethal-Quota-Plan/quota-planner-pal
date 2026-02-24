@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertTriangle } from "lucide-react";
+import PlanetMetainfoSection from "@/components/PlanetMetainfoSection.tsx";
 
 interface WeekCardProps {
   week: WeekData;
@@ -73,7 +74,7 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
                 </Select>
                 {planet && (
                   <p className="text-xs text-muted-foreground font-mono">
-                    Expected: <span className="text-success">{planet.expectedProfit}</span>
+                    Expected: <span className="text-success">▮{planet.expectedProfit}</span>
                   </p>
                 )}
               </div>
@@ -88,6 +89,9 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
             <span className="font-mono">Entrance costs: ▮{result.entranceCosts}</span>
           </div>
         )}
+
+        {/* Moon Metainfo */}
+        <PlanetMetainfoSection week={week}></PlanetMetainfoSection>
 
         {/* Sell Day */}
         <div className="border-t border-border pt-4">
