@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { AlertTriangle } from "lucide-react";
 import PlanetMetainfoSection from "@/components/PlanetMetainfoSection.tsx";
+import {deduceNonrepeatingPlanets} from "@/lib/utils.ts";
 
 interface WeekCardProps {
   week: WeekData;
@@ -91,7 +92,7 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
         )}
 
         {/* Moon Metainfo */}
-        <PlanetMetainfoSection week={week}></PlanetMetainfoSection>
+        {deduceNonrepeatingPlanets(week)[0] && <PlanetMetainfoSection week={week}></PlanetMetainfoSection>}
 
         {/* Sell Day */}
         <div className="border-t border-border pt-4">
