@@ -98,7 +98,7 @@ export default function Index() {
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {/* Game Over Banner */}
-        {(gameOver && game.weeks[gameOverWeek].sellAmount > 0) && (
+        {(gameOver && results && results[gameOverWeek].sellAmount > 0) && (
           <div className="flex items-center gap-3 bg-danger/10 border border-danger/30 rounded-lg px-4 py-3 glow-red">
             <Skull className="w-6 h-6 text-danger shrink-0" />
             <div>
@@ -110,7 +110,7 @@ export default function Index() {
           </div>
         )}
         {/* Game Duration Counter Banner */}
-        {!((gameOver && game.weeks[gameOverWeek].sellAmount > 0) || (gameOverWeek == -1)) && (
+        {!((gameOverWeek == -1) || (gameOver && results && results[gameOverWeek].sellAmount > 0)) && (
             <div className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-lg px-4 py-3 glow-orange">
               <ArrowBigRightDashIcon className="w-6 h-6 text-primary shrink-0" />
               <div>
