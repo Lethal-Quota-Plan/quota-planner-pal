@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import {useEffect, useMemo, useState} from "react";
 import {
   ComposedChart,
   Line,
@@ -10,7 +10,8 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import type { WeekData } from "@/lib/gameData";
+import type {LuckConfig, WeekData} from "@/lib/gameData";
+import {CategoricalChartState} from "recharts/types/chart/types";
 
 interface WeekResult {
   creditsAfter: number;
@@ -19,6 +20,7 @@ interface WeekResult {
   overtimeBonus: number;
   creditChange: number;
   carryOverScrap: number;
+  weekScrap: number;
 }
 
 interface WeekChartProps {
@@ -27,6 +29,8 @@ interface WeekChartProps {
   startingCredits: number;
   selectedIndex: number | null;
   onSelectWeek: (index: number) => void;
+  luckConfig: LuckConfig;
+  gameOverWeek: number;
 }
 
 const COLORS = {
@@ -41,9 +45,22 @@ const COLORS = {
 export default function WeekChart({
   results,
   weeks,
-  selectedIndex,
   onSelectWeek,
+  luckConfig,
+  gameOverWeek
 }: WeekChartProps) {
+  const [quota_offset, setQuota_offset] = useState(0);
+    const [scrap_offset, setScrap_offset] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQuota_offset((-(Date.now()%9000)/1000)*15*(1-0.5*luckConfig.quotaLuck));
+      setScrap_offset((-(Date.now()%6000)/1000)*gameOverWeek);
+    }, 10);
+
+    return () => clearInterval(interval);
+  }, [gameOverWeek, luckConfig.quotaLuck]);
+
   const data = useMemo(
     () =>
       results.map((r, i) => ({
@@ -55,11 +72,12 @@ export default function WeekChart({
         overtime: r.overtimeBonus,
         creditChange: r.creditChange,
         unsoldScrap: r.carryOverScrap,
+        weeklyScrap: r.weekScrap,
       })),
     [results, weeks]
   );
 
-  const handleClick = (state: any) => {
+  const handleClick = (state: CategoricalChartState) => {
     if (state?.activeTooltipIndex != null) {
       onSelectWeek(state.activeTooltipIndex);
     }
@@ -73,7 +91,7 @@ export default function WeekChart({
         </h2>
       </div>
       <div className="p-2">
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={500}>
           <ComposedChart
             data={data}
             onClick={handleClick}
@@ -98,6 +116,7 @@ export default function WeekChart({
               }}
             />
             <YAxis
+              unit="▮"
               tick={{ fill: "hsl(220 10% 60%)", fontSize: 10, fontFamily: "monospace" }}
               axisLine={{ stroke: "hsl(220 10% 30%)" }}
               tickLine={{ stroke: "hsl(220 10% 30%)" }}
@@ -134,6 +153,7 @@ export default function WeekChart({
               name="Quota"
               stroke={COLORS.quota}
               strokeDasharray="6 3"
+              strokeDashoffset={quota_offset}
               strokeWidth={1.5}
               dot={{ r: 2 }}
             />
@@ -167,9 +187,19 @@ export default function WeekChart({
               name="Unsold Scrap"
               stroke={COLORS.unsoldScrap}
               strokeDasharray="4 2"
+              strokeDashoffset={scrap_offset}
               strokeWidth={1.5}
               dot={{ r: 2 }}
             />
+              <Line
+                  type="monotone"
+                  dataKey="weeklyScrap"
+                  name="Weekly Profit"
+                  stroke={COLORS.unsoldScrap}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 2 }}
+              />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

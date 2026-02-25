@@ -2,7 +2,7 @@ import {
   PLANETS,
   getPlanetById,
   calculateWeekResults,
-  type WeekData,
+  type WeekData, getAdjustedProfit, LuckConfig,
 } from "@/lib/gameData";
 import {
   Select,
@@ -19,11 +19,12 @@ interface WeekCardProps {
   week: WeekData;
   carryOverScrap: number;
   creditsAfter: number;
+  luckConfig: LuckConfig;
   onUpdate: (week: WeekData) => void;
 }
 
-export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardProps) {
-  const result = calculateWeekResults(week, carryOverScrap);
+export default function WeekCard({ week, carryOverScrap, onUpdate, luckConfig }: WeekCardProps) {
+  const result = calculateWeekResults(week, carryOverScrap, luckConfig);
 
   const setPlanet = (dayIndex: number, planetId: string | null) => {
     const newDays = [...week.days] as [string | null, string | null, string | null];
@@ -76,6 +77,9 @@ export default function WeekCard({ week, carryOverScrap, onUpdate }: WeekCardPro
                 {planet && (
                   <p className="text-xs text-muted-foreground font-mono">
                     Expected: <span className="text-success">▮{planet.expectedProfit}</span>
+                    {(planet.expectedProfit !== getAdjustedProfit(planet.id, luckConfig.scrapBias)) &&
+                      <span>{(getAdjustedProfit(planet.id, luckConfig.scrapBias)-planet.expectedProfit) > 0 ? "+" : ""}{(getAdjustedProfit(planet.id, luckConfig.scrapBias)-planet.expectedProfit)}(biased)</span>
+                    }
                   </p>
                 )}
               </div>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 const PRESETS: { label: string; config: LuckConfig }[] = [
   { label: "I'm always being unfortunate", config: { scrapBias: -1.0, quotaLuck: 0.05 } },
   { label: "Just being probabilistically average", config: { scrapBias: 0, quotaLuck: 0.1545 } },
-  { label: "I trust in my luck", config: { scrapBias: 0.8, quotaLuck: 0.6 } },
+  { label: "I trust in my luck", config: { scrapBias: 1.2, quotaLuck: 0.7 } },
   { label: "Perfection shall eliminate any uncertainty", config: { scrapBias: 2.0, quotaLuck: 0.99 } },
 ];
 
@@ -24,6 +24,7 @@ export default function LuckSettings({ config, onChange }: LuckSettingsProps) {
 
   return (
     <div className="border border-border bg-card rounded-lg p-4 space-y-4 font-mono">
+      <div className="font-mono text-xs tracking-widest text-muted-foreground">Probability settings: how luck are you?</div>
       {/* Presets */}
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((preset, i) => (
@@ -43,7 +44,7 @@ export default function LuckSettings({ config, onChange }: LuckSettingsProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground uppercase tracking-wider">Scrap Bias</span>
+            <span className="text-muted-foreground uppercase tracking-wider">Scrap Bias (±100% = the 75% confidence interval, expands linear)</span>
             <span className="text-primary">{config.scrapBias >= 0 ? "+" : ""}{Math.round(config.scrapBias * 100)}%</span>
           </div>
           <Slider
@@ -56,12 +57,12 @@ export default function LuckSettings({ config, onChange }: LuckSettingsProps) {
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground uppercase tracking-wider">Quota Luck</span>
+            <span className="text-muted-foreground uppercase tracking-wider">Tuned Quota Luck Value</span>
             <span className="text-primary">{config.quotaLuck.toFixed(4)}</span>
           </div>
           <Slider
             min={0}
-            max={100}
+            max={99}
             step={1}
             value={[Math.round(config.quotaLuck * 100)]}
             onValueChange={([v]) => onChange({ ...config, quotaLuck: v / 100 })}

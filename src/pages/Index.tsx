@@ -13,7 +13,7 @@ import WeekTimeline from "@/components/WeekTimeline";
 import WeekCard from "@/components/WeekCard";
 import WeekChart from "@/components/WeekChart";
 import LuckSettings from "@/components/LuckSettings";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import {
   ArrowBigRight,
@@ -184,15 +184,6 @@ export default function Index() {
           onAddWeek={addWeek}
         />
 
-        {/* Chart */}
-        <WeekChart
-          results={results}
-          weeks={game.weeks}
-          startingCredits={game.startingCredits}
-          selectedIndex={selectedWeek}
-          onSelectWeek={setSelectedWeek}
-        />
-
         {/* Selected Week Card */}
         {selectedWeek !== null && game.weeks[selectedWeek] && (
           <div key={selectedWeek} className="animate-card-pop-in">
@@ -201,9 +192,22 @@ export default function Index() {
               carryOverScrap={carryChain[selectedWeek]}
               creditsAfter={results[selectedWeek]?.creditsAfter ?? game.startingCredits}
               onUpdate={(w) => updateWeek(selectedWeek, w)}
+              luckConfig={game.luckConfig}
             />
           </div>
         )}
+
+        {/* Chart */}
+        <WeekChart
+          results={results}
+          weeks={game.weeks}
+          startingCredits={game.startingCredits}
+          selectedIndex={selectedWeek}
+          onSelectWeek={setSelectedWeek}
+          luckConfig={game.luckConfig}
+          gameOverWeek={gameOverWeek}
+        />
+
       </main>
     </div>
   );
