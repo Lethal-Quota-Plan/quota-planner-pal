@@ -47,7 +47,7 @@ export default function Index() {
       setGame(imported);
       setSelectedWeek(0);
       toast({ title: "Plan imported successfully" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
     }
     e.target.value = "";
@@ -58,7 +58,7 @@ export default function Index() {
     try {
       await generatePDF();
       toast({ title: "PDF downloaded" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "PDF export failed", description: err.message, variant: "destructive" });
     }
   };
@@ -81,6 +81,14 @@ export default function Index() {
       return { ...prev, weeks: newWeeks };
     });
     setSelectedWeek(game.weeks.length);
+  };
+
+  const popWeek = () => {
+    setGame((prev) => {
+      prev.weeks.pop();
+      return prev;
+    });
+    if (selectedWeek >= game.weeks.length) setSelectedWeek(game.weeks.length-1); else setSelectedWeek(selectedWeek);
   };
 
   const handleReset = () => {
@@ -250,6 +258,7 @@ export default function Index() {
           gameOverWeek={gameOverWeek}
           onSelect={setSelectedWeek}
           onAddWeek={addWeek}
+          onPopWeek={popWeek}
         />
 
         {/* Selected Week Card */}

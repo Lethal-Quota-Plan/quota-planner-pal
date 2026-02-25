@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import {Plus} from "lucide-react";
+import {Minus, Plus} from "lucide-react";
 import type { WeekData } from "@/lib/gameData";
 
 interface WeekResult {
@@ -15,6 +15,7 @@ interface WeekTimelineProps {
   gameOverWeek: number | null;
   onSelect: (index: number | null) => void;
   onAddWeek: () => void;
+  onPopWeek: () => void;
 }
 
 export default function WeekTimeline({
@@ -24,6 +25,7 @@ export default function WeekTimeline({
   gameOverWeek,
   onSelect,
   onAddWeek,
+  onPopWeek,
 }: WeekTimelineProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -113,6 +115,22 @@ export default function WeekTimeline({
             <Plus className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Minus week node */}
+        <div className="flex items-center shrink-0">
+          {weeks.length > 0 && <div className="h-px bg-border" style={{ width: weekNodeSeparation+"rem" }}/>}
+          <button
+              onClick={onPopWeek}
+              className="relative z-[1] w-10 h-10 rounded-full border-2 border-dashed border-border
+              bg-secondary/50 flex items-center justify-center
+              hover:border-primary/50 hover:text-primary transition-all duration-200
+              text-muted-foreground"
+              title={`Remove Week ${weeks.length-1}`}
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+        </div>
+
       </div>
     </div>
   );
