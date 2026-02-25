@@ -1,117 +1,96 @@
 
 
-# Luck Configuration System
+# Export, Import, and PDF Export
 
 ## Overview
 
-Add a settings panel where players can configure two simulation parameters -- **scrap value bias** and **quota luck** -- either manually via sliders or by selecting one of four named presets. These settings are persisted in the game state and feed into the existing calculation pipeline.
+Add three features to the header toolbar: (1) export the current game plan as a JSON file, (2) import a plan from a JSON file, and (3) export a visual PDF report showing all week cards, the chart, and summary info.
 
-## The Two Settings
+## 1. JSON Export
 
-### 1. Scrap Value Bias (affects daily scrap collected per moon)
+- Serialize the current `GameState` (weeks, startingCredits, luckConfig) to a JSON blob
+- Trigger a browser file download as `lethal-plan-YYYY-MM-DD.json`
+- Implemented as a utility function `exportGameToFile(state: GameState)` in `src/lib/gameData.ts`
 
-A slider from **-200% to +200%** that shifts the expected scrap value for each moon:
+## 2. JSON Import
 
-- **0%** = the moon's statistical average (`expectedProfit` in PLANETS, unchanged from current behavior)
-- **-100%** = the moon's 12.5th percentile value (`P125_scrap_val` from `EnumMetainf`)
-- **+100%** = the moon's 87.5th percentile value (`P875_scrap_val` from `EnumMetainf`)
-- Values beyond +/-100% extrapolate linearly beyond P12.5/P87.5
+- Open a file picker (hidden `<input type="file" accept=".json">`)
+- Parse the uploaded JSON, validate it has the expected shape (weeks array, startingCredits, luckConfig)
+- On success, replace the current game state and show a toast notification
+- On failure (bad format), show an error toast
+- Implemented as a utility function `importGameFromFile(file: File): Promise<GameState>` in `src/lib/gameData.ts`
 
-The formula per moon at bias `b` (where b is the slider value as a fraction, e.g. 1.0 = 100%):
+## 3. PDF Export (visual report)
 
-```text
-if b >= 0:
-  scrap = average + b * (P875 - average)
-if b < 0:
-  scrap = average + b * (average - P125)
+- Install `html2canvas` and `jspdf` as dependencies
+- Create a new route `/export` that renders a print-friendly page showing:
+  - Header with title, luck settings summary, starting credits
+  - All week cards stacked vertically (read-only, no interactivity)
+  - The metrics chart at the bottom
+  - Summary banner (game over status, total weeks)
+- Create `src/pages/ExportView.tsx` -- a non-interactive, print-optimized layout
+- Create `src/components/WeekCardReadonly.tsx` -- a simplified read-only version of WeekCard (no selects/inputs, just displays the data)
+- The PDF generation flow:
+  1. Open `/export` in a new window or render it in a hidden container
+  2. Use `html2canvas` to capture the full page as a canvas
+  3. Use `jspdf` to convert the canvas to a multi-page PDF
+  4. Trigger download as `lethal-plan-report.pdf`
+- A helper function `generatePDF()` in `src/lib/pdfExport.ts` orchestrates this
+
+## 4. UI Integration in Header
+
+Add three icon buttons to the header toolbar (next to Settings and Reset):
+
+- **Download** icon (lucide `Download`) -- exports JSON
+- **Upload** icon (lucide `Upload`) -- triggers file import
+- **FileText** icon (lucide `FileText`) -- generates and downloads PDF
+
+## Technical Details
+
+### New dependencies
+- `jspdf` -- PDF generation
+- `html2canvas` -- DOM-to-canvas rendering
+
+### New files
+- `src/lib/pdfExport.ts` -- PDF generation logic
+- `src/pages/ExportView.tsx` -- print-friendly full plan view
+- `src/components/WeekCardReadonly.tsx` -- read-only week card for PDF
+
+### Modified files
+- `src/lib/gameData.ts` -- add `exportGameToFile()` and `importGameFromFile()` functions
+- `src/pages/Index.tsx` -- add three toolbar buttons, file input ref, import handler
+- `src/App.tsx` -- add `/export` route
+
+### JSON format (export/import)
+
+```json
+{
+  "weeks": [
+    {
+      "id": "...",
+      "weekNumber": 0,
+      "days": ["41", null, "220"],
+      "sellAmount": 400
+    }
+  ],
+  "startingCredits": 60,
+  "luckConfig": {
+    "scrapBias": 0,
+    "quotaLuck": 0.1545
+  }
+}
 ```
 
-This replaces the static `expectedProfit` lookup in `calculateWeekResults`.
+### Validation on import
+- Check that `weeks` is an array with valid `weekNumber`, `days` (array of 3), and `sellAmount`
+- Check `startingCredits` is a number
+- Fall back to default `luckConfig` if missing
+- Reject with error toast if structure is invalid
 
-### 2. Quota Luck (affects quota escalation curve)
-
-A slider from **0 to 1** that is passed directly as `luck_val` into `quotaStat.next()`. Higher values = luckier = slower quota growth. Currently hardcoded at 0.1545.
-
-This replaces the hardcoded default in `quotaStat.stepToAndReturn`.
-
-## Four Presets
-
-| Preset Name | Scrap Bias | Quota Luck |
-|---|---|---|
-| I'm always being unfortunate | -100% | 0.05 |
-| Just being probabilistically average | 0% | 0.1545 |
-| I trust in my luck | +80% | 0.6 |
-| Perfection shall eliminate any uncertainty | +200% | 0.99 |
-
-Selecting a preset sets both sliders. Adjusting either slider manually clears the active preset indicator (switches to "Custom").
-
-## UI Design
-
-A collapsible settings bar placed between the header and the banners in the main layout:
-
-- A gear icon button in the header toggles it open/closed
-- When open, it shows:
-  - A row of 4 preset buttons (pill-shaped, monospace, the active one highlighted in primary color)
-  - Two labeled sliders below:
-    - "SCRAP BIAS" with value label showing the percentage
-    - "QUOTA LUCK" with value label showing the decimal
-- Styled consistently with the dark industrial theme (border-border, bg-card, font-mono)
-
-## Technical Changes
-
-### 1. Extend `GameState` in `src/lib/gameData.ts`
-
-Add a `luckConfig` field to `GameState`:
-
-```typescript
-interface LuckConfig {
-  scrapBias: number;   // -2.0 to 2.0 (fraction, not percentage)
-  quotaLuck: number;   // 0.0 to 1.0
-}
-
-interface GameState {
-  weeks: WeekData[];
-  startingCredits: number;
-  luckConfig: LuckConfig;  // new field
-}
-```
-
-Default value: `{ scrapBias: 0, quotaLuck: 0.1545 }`.
-
-Update `loadGame`, `resetGame` to include the default. Existing saves without this field get the default via a fallback.
-
-### 2. Create scrap bias calculator in `src/lib/gameData.ts`
-
-Add a function `getAdjustedProfit(planetId: string, scrapBias: number): number` that:
-
-- Looks up the moon's `P125_scrap_val`, `P875_scrap_val`, and `expectedProfit` from `EnumMetainf.metamap`
-- Applies the linear interpolation formula described above
-- Falls back to `expectedProfit` if the moon isn't in `EnumMetainf`
-
-### 3. Thread `luckConfig` through calculations
-
-- `calculateWeekResults` receives `luckConfig` as a parameter
-- Daily scrap uses `getAdjustedProfit(pid, luckConfig.scrapBias)` instead of `planet.expectedProfit`
-- `getQuotaForWeek` receives `quotaLuck` and passes it to `quotaStat.stepToAndReturn`
-- `quotaStat.stepToAndReturn` accepts an optional `luck_val` parameter instead of using the hardcoded default
-- `calculateAllWeeks` passes `luckConfig` through
-
-### 4. Create `src/components/LuckSettings.tsx`
-
-A new component with:
-
-- Props: `config: LuckConfig`, `onChange: (config: LuckConfig) => void`
-- 4 preset buttons in a horizontal row
-- Two `Slider` components (from the existing radix slider in `src/components/ui/slider.tsx`)
-- Scrap bias slider: min -200, max 200, step 5, displayed as percentage
-- Quota luck slider: min 0, max 100, step 1, internally mapped to 0-1
-- Active preset detection: compare current values against preset values to highlight the matching one
-
-### 5. Update `src/pages/Index.tsx`
-
-- Add a `showSettings` toggle state
-- Render a gear icon button in the header (next to the reset button)
-- Render `LuckSettings` in a collapsible section when toggled
-- Pass `game.luckConfig` and an `onChangeLuckConfig` handler that updates the game state
-- Pass `game.luckConfig` to `calculateAllWeeks`
+### PDF generation flow
+1. Navigate to `/export?source=pdf` (or render in a hidden div)
+2. Wait for render, then `html2canvas(document.getElementById('export-root'))`
+3. Split the canvas into A4-sized pages
+4. Add each page to the jsPDF document
+5. Save as `lethal-plan-report.pdf`
 
