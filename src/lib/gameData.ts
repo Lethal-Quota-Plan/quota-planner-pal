@@ -155,3 +155,35 @@ export function resetGame(): GameState {
   localStorage.removeItem(STORAGE_KEY);
   return { weeks: [createWeek(0)], startingCredits: 60, luckConfig: DEFAULT_LUCK_CONFIG };
 }
+
+export function exportGameToFile(state: GameState) {
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `lethal-plan-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function importGameFromFile(file: File): Promise<GameState> {
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+
+  if (!Array.isArray(parsed.weeks)) throw new Error("Invalid format: missing weeks array");
+  for (const w of parsed.weeks) {
+    if (typeof w.weekNumber !== "number") throw new Error("Invalid week: missing weekNumber");
+    if (!Array.isArray(w.days) || w.days.length !== 3) throw new Error("Invalid week: days must be array of 3");
+    if (typeof w.sellAmount !== "number") throw new Error("Invalid week: missing sellAmount");
+    if (!w.id) w.id = crypto.randomUUID();
+  }
+  if (typeof parsed.startingCredits !== "number") throw new Error("Invalid format: missing startingCredits");
+
+  return {
+    weeks: parsed.weeks,
+    startingCredits: parsed.startingCredits,
+    luckConfig: parsed.luckConfig ?? DEFAULT_LUCK_CONFIG,
+  };
+}

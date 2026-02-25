@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   type GameState,
   type WeekData,
@@ -8,6 +8,8 @@ import {
   loadGame,
   saveGame,
   resetGame,
+  exportGameToFile,
+  importGameFromFile,
 } from "@/lib/gameData";
 import WeekTimeline from "@/components/WeekTimeline";
 import WeekCard from "@/components/WeekCard";
@@ -18,16 +20,48 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowBigRight,
   ArrowBigRightDashIcon,
+  Download,
+  FileText,
   RotateCcw,
   Settings,
   Skull,
-  TrendingUp
+  TrendingUp,
+  Upload,
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { generatePDF } from "@/lib/pdfExport";
 
 export default function Index() {
   const [game, setGame] = useState<GameState>(loadGame);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportJSON = () => exportGameToFile(game);
+
+  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const imported = await importGameFromFile(file);
+      setGame(imported);
+      setSelectedWeek(0);
+      toast({ title: "Plan imported successfully" });
+    } catch (err: any) {
+      toast({ title: "Import failed", description: err.message, variant: "destructive" });
+    }
+    e.target.value = "";
+  };
+
+  const handleExportPDF = async () => {
+    toast({ title: "Generating PDF..." });
+    try {
+      await generatePDF();
+      toast({ title: "PDF downloaded" });
+    } catch (err: any) {
+      toast({ title: "PDF export failed", description: err.message, variant: "destructive" });
+    }
+  };
 
   useEffect(() => {
     saveGame(game);
@@ -102,6 +136,40 @@ export default function Index() {
                   : finalCredits}
               </p>
             </div>
+            <input
+              type="file"
+              accept=".json"
+              ref={fileInputRef}
+              onChange={handleImportJSON}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleExportJSON}
+              title="Export Plan (JSON)"
+              className="border-border text-muted-foreground hover:text-primary hover:border-primary/50"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              title="Import Plan (JSON)"
+              className="border-border text-muted-foreground hover:text-primary hover:border-primary/50"
+            >
+              <Upload className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleExportPDF}
+              title="Export PDF Report"
+              className="border-border text-muted-foreground hover:text-primary hover:border-primary/50"
+            >
+              <FileText className="w-4 h-4" />
+            </Button>
             <Button
               variant="outline"
               size="icon"
