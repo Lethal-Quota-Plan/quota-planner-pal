@@ -42,6 +42,8 @@ const COLORS = {
   unsoldScrap: "hsl(220 10% 50%)",
 };
 
+const ALL_KEYS = ["credits", "quota", "sold", "overtime", "creditChange", "unsoldScrap", "weeklyScrap"] as const;
+
 export default function WeekChart({
   results,
   weeks,
@@ -50,7 +52,19 @@ export default function WeekChart({
   gameOverWeek
 }: WeekChartProps) {
   const [quota_offset, setQuota_offset] = useState(0);
-    const [scrap_offset, setScrap_offset] = useState(0);
+  const [scrap_offset, setScrap_offset] = useState(0);
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
+
+  const handleLegendClick = (e: any) => {
+    const key = String(e?.dataKey ?? "");
+    if (!key) return;
+    setHiddenKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -136,7 +150,12 @@ export default function WeekChart({
               cursor={{ stroke: "hsl(35 90% 55% / 0.3)" }}
             />
             <Legend
-              wrapperStyle={{ fontSize: 10, fontFamily: "monospace" }}
+              wrapperStyle={{ fontSize: 10, fontFamily: "monospace", cursor: "pointer" }}
+              onClick={handleLegendClick}
+              formatter={(value, entry) => {
+                const isHidden = hiddenKeys.has((entry as any).dataKey);
+                return <span style={{ opacity: isHidden ? 0.3 : 1 }}>{value}</span>;
+              }}
             />
             <Line
               type="monotone"
@@ -146,6 +165,7 @@ export default function WeekChart({
               strokeWidth={2}
               dot={{ r: 3 }}
               activeDot={{ r: 5, stroke: COLORS.credits, strokeWidth: 2 }}
+              hide={hiddenKeys.has("credits")}
             />
             <Line
               type="monotone"
@@ -156,6 +176,7 @@ export default function WeekChart({
               strokeDashoffset={quota_offset}
               strokeWidth={1.5}
               dot={{ r: 2 }}
+              hide={hiddenKeys.has("quota")}
             />
             <Line
               type="monotone"
@@ -164,6 +185,7 @@ export default function WeekChart({
               stroke={COLORS.sold}
               strokeWidth={1.5}
               dot={{ r: 2 }}
+              hide={hiddenKeys.has("sold")}
             />
             <Line
               type="monotone"
@@ -172,6 +194,7 @@ export default function WeekChart({
               stroke={COLORS.overtime}
               strokeWidth={1.5}
               dot={{ r: 2 }}
+              hide={hiddenKeys.has("overtime")}
             />
             <Line
               type="monotone"
@@ -180,6 +203,7 @@ export default function WeekChart({
               stroke={COLORS.creditChange}
               strokeWidth={1.5}
               dot={{ r: 2 }}
+              hide={hiddenKeys.has("creditChange")}
             />
             <Line
               type="monotone"
@@ -189,6 +213,7 @@ export default function WeekChart({
               strokeDasharray="4 2"
               strokeDashoffset={scrap_offset}
               strokeWidth={1.5}
+              hide={hiddenKeys.has("unsoldScrap")}
               dot={{ r: 2 }}
             />
               <Line
@@ -199,6 +224,7 @@ export default function WeekChart({
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 2 }}
+                  hide={hiddenKeys.has("weeklyScrap")}
               />
           </ComposedChart>
         </ResponsiveContainer>
