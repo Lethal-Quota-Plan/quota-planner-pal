@@ -169,6 +169,7 @@ export default function Index() {
             >
               <Upload className="w-4 h-4" />
             </Button>
+            {/*
             <Button
               variant="outline"
               size="icon"
@@ -178,6 +179,7 @@ export default function Index() {
             >
               <FileText className="w-4 h-4" />
             </Button>
+            */}
             <Button
               variant="outline"
               size="icon"
